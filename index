@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DCA Swing Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+:root{--bg:#0a0e1a;--panel:#111827;--panel2:#0f172a;--border:#1e2d45;--accent:#00c8ff;--green:#00e5a0;--red:#ff4d6d;--yellow:#ffd166;--muted:#64748b;--text:#e2e8f0;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;overflow-x:hidden;}
+.grid-bg{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(0,200,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,0.03) 1px,transparent 1px);background-size:40px 40px;}
+.wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:20px 16px;}
+header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px;}
+header h1{font-family:var(--mono);font-size:20px;color:var(--accent);letter-spacing:0.06em;}
+.tagline{font-size:11px;color:var(--muted);letter-spacing:0.08em;margin-top:3px;}
+.hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+#ts{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.hdr-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.btn{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;padding:7px 14px;border-radius:4px;cursor:pointer;border:none;background:var(--accent);color:#000;font-weight:600;transition:opacity 0.15s;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+.btn:hover:not(:disabled){opacity:0.85;}
+.index-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:10px 14px;background:var(--panel);border:1px solid var(--border);border-radius:6px;}
+.index-bar label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.1em;}
+.ix-btn{font-family:var(--mono);font-size:12px;letter-spacing:0.06em;padding:5px 14px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all 0.15s;}
+.ix-btn.active{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600;}
+.ix-btn:hover:not(.active){border-color:var(--accent);color:var(--accent);}
+.ix-desc{font-size:11px;color:var(--muted);margin-left:4px;}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:14px;font-family:var(--mono);font-size:10px;letter-spacing:0.07em;}
+.leg-item{display:flex;align-items:center;gap:5px;color:var(--muted);}
+.leg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.score-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px 18px;margin-bottom:16px;}
+.score-display{display:flex;align-items:baseline;gap:4px;}
+.score-num{font-family:var(--mono);font-size:40px;font-weight:600;line-height:1;}
+.score-denom{font-family:var(--mono);font-size:16px;color:var(--muted);}
+.score-right{flex:1;min-width:200px;}
+.score-lbl{font-family:var(--mono);font-size:13px;letter-spacing:0.04em;margin-bottom:8px;}
+.score-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:8px;}
+.score-fill{height:100%;border-radius:3px;transition:width 0.6s ease,background 0.4s;}
+.summary{font-size:12px;color:var(--muted);line-height:1.6;}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:12px 14px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--muted);}
+.card.bull::before{background:var(--green);}
+.card.bear::before{background:var(--red);}
+.card.neutral::before{background:var(--yellow);}
+.card-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:var(--muted);margin-bottom:6px;text-transform:uppercase;}
+.card-val{font-family:var(--mono);font-size:20px;font-weight:600;}
+.card-sub{font-size:10px;color:var(--muted);margin-top:4px;}
+.card-sig{font-family:var(--mono);font-size:10px;letter-spacing:0.06em;margin-top:6px;}
+.sig-bull{color:var(--green);}.sig-bear{color:var(--red);}.sig-neutral{color:var(--yellow);}
+.chart-section{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:16px;}
+.chart-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.chart-title{font-family:var(--mono);font-size:12px;letter-spacing:0.08em;color:var(--muted);}
+.chart-wrapper{position:relative;width:100%;height:320px;}
+.dca-panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:16px;}
+.dca-title{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--muted);margin-bottom:12px;}
+.dca-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.dca-item{background:var(--panel2);border:1px solid var(--border);border-radius:4px;padding:10px 12px;}
+.dca-item-lbl{font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:0.04em;}
+.dca-item-val{font-family:var(--mono);font-size:14px;font-weight:600;}
+.spinner{display:none;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:0.08em;}
+.spinner.show{display:flex;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.spin-ring{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:spin 0.8s linear infinite;}
+.err-bar{display:none;background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.3);border-radius:4px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--red);font-family:var(--mono);}
+.err-bar.show{display:block;}
+footer{font-size:10px;color:var(--muted);text-align:center;padding-top:12px;border-top:1px solid var(--border);line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="wrap">
+<header>
+  <div>
+    <h1>DCA SWING DASHBOARD</h1>
+    <div class="tagline">Higher Highs · Higher Lows · DCA Timing Signal</div>
+  </div>
+  <div class="hdr-right">
+    <div id="ts">—</div>
+    <div class="hdr-btns">
+      <div class="spinner" id="spinner"><div class="spin-ring"></div><span id="spin-lbl">LOADING…</span></div>
+      <button class="btn" id="run-btn" onclick="runLive()">REFRESH LIVE ↗</button>
+    </div>
+  </div>
+</header>
+
+<div class="index-bar">
+  <label>INDEX</label>
+  <button class="ix-btn active" id="ix-SPY" onclick="selectIndex('SPY',this)">SPY</button>
+  <button class="ix-btn" id="ix-QQQ" onclick="selectIndex('QQQ',this)">QQQ</button>
+  <button class="ix-btn" id="ix-DIA" onclick="selectIndex('DIA',this)">DIA</button>
+  <span class="ix-desc" id="ix-desc">S&amp;P 500 — large cap blend</span>
+</div>
+
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>SWING HIGH ▲</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>SWING LOW ▼</div>
+  <div class="leg-item"><div class="leg-dot" style="background:rgba(255,77,109,0.5);border-radius:0"></div>HIGH TREND (dashed)</div>
+  <div class="leg-item"><div class="leg-dot" style="background:rgba(0,229,160,0.5);border-radius:0"></div>LOW TREND (dashed)</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--accent)"></div>200D MA</div>
+  <div class="leg-item"><div class="leg-dot" style="background:var(--yellow)"></div>50D MA</div>
+</div>
+
+<div class="err-bar" id="err-bar"></div>
+
+<div class="score-wrap">
+  <div class="score-display">
+    <div class="score-num" id="score-num" style="color:var(--yellow)">—</div>
+    <div class="score-denom">/ 10</div>
+  </div>
+  <div class="score-right">
+    <div class="score-lbl" id="score-lbl">DCA SIGNAL — Loading data…</div>
+    <div class="score-track"><div class="score-fill" id="score-fill" style="width:0%;background:var(--yellow)"></div></div>
+    <div class="summary" id="summary">Click REFRESH LIVE to load current market data for swing structure and DCA timing analysis.</div>
+  </div>
+</div>
+
+<div class="cards-grid" id="cards-grid">
+  <div class="card neutral"><div class="card-lbl">PRICE</div><div class="card-val" style="color:var(--accent)">—</div><div class="card-sub">Last close</div></div>
+  <div class="card neutral"><div class="card-lbl">vs 200D MA</div><div class="card-val">—</div><div class="card-sub">Trend filter</div></div>
+  <div class="card neutral"><div class="card-lbl">vs 50D MA</div><div class="card-val">—</div><div class="card-sub">Short-term</div></div>
+  <div class="card neutral"><div class="card-lbl">52W HIGH</div><div class="card-val">—</div><div class="card-sub">From high</div></div>
+  <div class="card neutral"><div class="card-lbl">52W LOW</div><div class="card-val">—</div><div class="card-sub">From low</div></div>
+  <div class="card neutral"><div class="card-lbl">SWING TREND</div><div class="card-val">—</div><div class="card-sub">HH/HL or LH/LL</div></div>
+</div>
+
+<div class="chart-section">
+  <div class="chart-hdr">
+    <div class="chart-title">PRICE + SWING STRUCTURE — <span id="chart-sym">SPY</span></div>
+    <div style="font-size:10px;color:var(--muted);font-family:var(--mono)">90-DAY DAILY BARS</div>
+  </div>
+  <div class="chart-wrapper"><canvas id="mc"></canvas></div>
+</div>
+
+<div class="dca-panel">
+  <div class="dca-title">DCA TIMING ANALYSIS</div>
+  <div class="dca-grid">
+    <div class="dca-item"><div class="dca-item-lbl">Market Structure</div><div class="dca-item-val" id="d-structure" style="color:var(--muted)">—</div></div>
+    <div class="dca-item"><div class="dca-item-lbl">Last Confirmed Swing Low</div><div class="dca-item-val" id="d-last-low" style="color:var(--muted)">—</div></div>
+    <div class="dca-item"><div class="dca-item-lbl">Support Zone (prev HL)</div><div class="dca-item-val" id="d-support" style="color:var(--muted)">—</div></div>
+    <div class="dca-item"><div class="dca-item-lbl">DCA Action Today</div><div class="dca-item-val" id="d-action" style="color:var(--muted)">—</div></div>
+    <div class="dca-item"><div class="dca-item-lbl">Drawdown from 52W High</div><div class="dca-item-val" id="d-drawdown" style="color:var(--muted)">—</div></div>
+    <div class="dca-item"><div class="dca-item-lbl">Ideal DCA Entry Zone</div><div class="dca-item-val" id="d-zone" style="color:var(--muted)">—</div></div>
+  </div>
+</div>
+
+<footer>
+  Data via Yahoo Finance (unofficial CORS proxy). Prices may be delayed up to 15 min. Not financial advice.<br>
+  Swing structure uses 3-bar pivot lookback on daily adjusted closes. Refresh daily for updated signals.
+</footer>
+</div>
+
+<script>
+const INDICES={SPY:{label:'S&P 500 — large cap blend'},QQQ:{label:'Nasdaq-100 — tech growth'},DIA:{label:'Dow Jones — 30 blue chips'}};
+let currentIndex='SPY',chart=null,cache={};
+
+function selectIndex(sym,btn){
+  currentIndex=sym;
+  document.querySelectorAll('.ix-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('ix-desc').textContent=INDICES[sym].label;
+  document.getElementById('chart-sym').textContent=sym;
+  if(cache[sym])renderAll(cache[sym]);else runLive();
+}
+
+async function yfetch(url){
+  const proxies=[
+    'https://api.allorigins.win/get?url='+encodeURIComponent(url),
+    'https://corsproxy.io/?'+encodeURIComponent(url)
+  ];
+  for(const proxy of proxies){
+    try{
+      const r=await fetch(proxy,{signal:AbortSignal.timeout(9000)});
+      if(!r.ok)continue;
+      const j=await r.json();
+      const raw=j.contents||j;
+      return typeof raw==='string'?JSON.parse(raw):raw;
+    }catch{continue;}
+  }
+  throw new Error('All proxies failed — try again in a moment');
+}
+
+function sma(arr,n){return arr.map((_,i)=>i<n-1?null:arr.slice(i-n+1,i+1).reduce((a,b)=>a+b,0)/n);}
+
+function findSwings(prices,win=3){
+  const highs=[],lows=[];
+  for(let i=win;i<prices.length-win;i++){
+    let isH=true,isL=true;
+    for(let j=i-win;j<=i+win;j++){
+      if(j===i)continue;
+      if(prices[j]>=prices[i])isH=false;
+      if(prices[j]<=prices[i])isL=false;
+    }
+    if(isH)highs.push(i);
+    if(isL)lows.push(i);
+  }
+  return{highs,lows};
+}
+
+function classifySwings(prices,swings){
+  const{highs,lows}=swings;
+  const hLabels=highs.map((idx,i)=>({idx,tag:i===0?'H':prices[idx]>prices[highs[i-1]]?'HH':'LH',val:prices[idx]}));
+  const lLabels=lows.map((idx,i)=>({idx,tag:i===0?'L':prices[idx]>prices[lows[i-1]]?'HL':'LL',val:prices[idx]}));
+  return{hLabels,lLabels};
+}
+
+function scoreFromClassified(c){
+  const r4h=c.hLabels.slice(-4),r4l=c.lLabels.slice(-4);
+  const hhC=r4h.filter(h=>h.tag==='HH').length,lhC=r4h.filter(h=>h.tag==='LH').length;
+  const hlC=r4l.filter(l=>l.tag==='HL').length,llC=r4l.filter(l=>l.tag==='LL').length;
+  return Math.max(0,Math.min(10,Math.round((5+(hhC-lhC)*1.2+(hlC-llC)*1.2)*10)/10));
+}
+
+function scoreColor(s){return s>=7?'var(--green)':s>=4.5?'var(--yellow)':'var(--red)';}
+
+function renderAll(data){
+  const{sym,closes,timestamps,ma50,ma200,high52,low52,classified}=data;
+  const last=closes[closes.length-1];
+  const lma200=ma200[ma200.length-1];
+  const lma50=ma50[ma50.length-1];
+  const score=scoreFromClassified(classified);
+  const col=scoreColor(score);
+  const{hLabels,lLabels}=classified;
+  const r4h=hLabels.slice(-4),r4l=lLabels.slice(-4);
+  const hhC=r4h.filter(h=>h.tag==='HH').length,lhC=r4h.filter(h=>h.tag==='LH').length;
+  const hlC=r4l.filter(l=>l.tag==='HL').length,llC=r4l.filter(l=>l.tag==='LL').length;
+
+  document.getElementById('score-num').textContent=score.toFixed(1);
+  document.getElementById('score-num').style.color=col;
+  document.getElementById('score-fill').style.width=(score*10)+'%';
+  document.getElementById('score-fill').style.background=col;
+
+  let structure,structureCol;
+  if(hhC>=2&&hlC>=1){structure='UPTREND ↑';structureCol='var(--green)';}
+  else if(lhC>=2&&llC>=1){structure='DOWNTREND ↓';structureCol='var(--red)';}
+  else{structure='TRANSITIONAL ↔';structureCol='var(--yellow)';}
+
+  let lbl,summary;
+  const pHigh=((last-high52)/high52*100).toFixed(1);
+  if(score>=7){
+    lbl='STRONG UPTREND — DCA AGGRESSIVELY';
+    summary=sym+' is printing Higher Highs and Higher Lows — a healthy uptrend. Price is '+(last>lma200?'above':'below')+' its 200D MA ($'+lma200.toFixed(2)+'). Ideal environment: DCA on any dip toward the most recent Higher Low.';
+  }else if(score>=5.5){
+    lbl='MILD UPTREND — DCA AT NORMAL PACE';
+    summary=sym+' shows mostly bullish swing structure but some Lower Highs are appearing. Continue DCA at your normal cadence. Watch for a confirmed Higher Low before increasing allocation.';
+  }else if(score>=4){
+    lbl='MIXED STRUCTURE — DCA CAUTIOUSLY';
+    summary=sym+' is transitional — neither a clean uptrend nor downtrend. Consider smaller DCA tranches. Wait for a confirmed Higher Low (a low above the prior low) to signal resumption before sizing up.';
+  }else{
+    lbl='DOWNTREND — REDUCE DCA / WAIT FOR HL';
+    summary=sym+' is printing Lower Highs and Lower Lows. DCA into a downtrend without a reversal signal increases risk. Wait for a confirmed Higher Low before starting a new DCA tranche. Currently '+pHigh+'% off 52-week high.';
+  }
+  document.getElementById('score-lbl').textContent=lbl;
+  document.getElementById('summary').textContent=summary;
+
+  const pMa200=lma200?((last-lma200)/lma200*100):null;
+  const pMa50=lma50?((last-lma50)/lma50*100):null;
+  const pLow=((last-low52)/low52*100);
+
+  const cards=[
+    {lbl:'PRICE',val:'$'+last.toFixed(2),sub:sym+' last close',cls:'neutral',sig:'',sigcls:''},
+    {lbl:'vs 200D MA',val:pMa200!==null?(pMa200>=0?'+':'')+pMa200.toFixed(1)+'%':'—',sub:'200D: $'+(lma200?.toFixed(2)||'—'),cls:pMa200===null?'neutral':pMa200>=0?'bull':'bear',sig:pMa200===null?'':pMa200>=0?'ABOVE — BULLISH':'BELOW — BEARISH',sigcls:pMa200===null?'':pMa200>=0?'sig-bull':'sig-bear'},
+    {lbl:'vs 50D MA',val:pMa50!==null?(pMa50>=0?'+':'')+pMa50.toFixed(1)+'%':'—',sub:'50D: $'+(lma50?.toFixed(2)||'—'),cls:pMa50===null?'neutral':pMa50>=0?'bull':'bear',sig:pMa50===null?'':pMa50>=0?'ABOVE — BULLISH':'BELOW — BEARISH',sigcls:pMa50===null?'':pMa50>=0?'sig-bull':'sig-bear'},
+    {lbl:'52W HIGH',val:pHigh+'%',sub:'$'+high52.toFixed(2),cls:parseFloat(pHigh)>=-5?'bull':parseFloat(pHigh)>=-15?'neutral':'bear',sig:parseFloat(pHigh)>=-5?'NEAR HIGH':parseFloat(pHigh)>=-15?'MODERATE PULLBACK':'DEEP DRAWDOWN',sigcls:parseFloat(pHigh)>=-5?'sig-bull':parseFloat(pHigh)>=-15?'sig-neutral':'sig-bear'},
+    {lbl:'52W LOW',val:'+'+pLow.toFixed(1)+'%',sub:'$'+low52.toFixed(2),cls:'neutral',sig:pLow<=20?'NEAR SUPPORT':'',sigcls:'sig-neutral'},
+    {lbl:'SWING TREND',val:structure,sub:'HH:'+hhC+' HL:'+hlC+' LH:'+lhC+' LL:'+llC,cls:score>=6?'bull':score>=4?'neutral':'bear',sig:'',sigcls:''}
+  ];
+  document.getElementById('cards-grid').innerHTML=cards.map(c=>`
+    <div class="card ${c.cls}">
+      <div class="card-lbl">${c.lbl}</div>
+      <div class="card-val" style="color:${c.cls==='bull'?'var(--green)':c.cls==='bear'?'var(--red)':'var(--accent)'}">${c.val}</div>
+      <div class="card-sub">${c.sub}</div>
+      ${c.sig?`<div class="card-sig ${c.sigcls}">${c.sig}</div>`:''}
+    </div>`).join('');
+
+  const lastLow=lLabels[lLabels.length-1];
+  const prevLow=lLabels[lLabels.length-2];
+  let dcaAction,dcaCol;
+  if(score>=7){dcaAction='BUY AGGRESSIVELY';dcaCol='var(--green)';}
+  else if(score>=5.5){dcaAction='BUY NORMAL PACE';dcaCol='var(--green)';}
+  else if(score>=4){dcaAction='BUY SMALL / WATCH';dcaCol='var(--yellow)';}
+  else{dcaAction='WAIT FOR HL SIGNAL';dcaCol='var(--red)';}
+  const zLow=lastLow?(lastLow.val).toFixed(2):null;
+  const zHigh=lastLow?(lastLow.val*1.03).toFixed(2):null;
+
+  document.getElementById('d-structure').textContent=structure;
+  document.getElementById('d-structure').style.color=structureCol;
+  document.getElementById('d-last-low').textContent=lastLow?'$'+lastLow.val.toFixed(2):'—';
+  document.getElementById('d-last-low').style.color='var(--green)';
+  document.getElementById('d-support').textContent=prevLow&&lastLow?'$'+prevLow.val.toFixed(2)+' – $'+lastLow.val.toFixed(2):'—';
+  document.getElementById('d-support').style.color='var(--yellow)';
+  document.getElementById('d-action').textContent=dcaAction;
+  document.getElementById('d-action').style.color=dcaCol;
+  document.getElementById('d-drawdown').textContent=pHigh+'% from 52W high';
+  document.getElementById('d-drawdown').style.color=parseFloat(pHigh)<-10?'var(--green)':'var(--yellow)';
+  document.getElementById('d-zone').textContent=zLow?'$'+zLow+' – $'+zHigh:'—';
+  document.getElementById('d-zone').style.color='var(--accent)';
+
+  document.getElementById('ts').textContent='Data as of '+new Date(timestamps[timestamps.length-1]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  // Build 90-day chart
+  const take=Math.min(90,closes.length);
+  const sl=closes.length-take;
+  const labels90=timestamps.slice(sl).map(t=>{const d=new Date(t*1000);return(d.getMonth()+1)+'/'+d.getDate();});
+  const prices90=closes.slice(sl);
+  const ma200_90=ma200.slice(sl);
+  const ma50_90=ma50.slice(sl);
+  const sw90=findSwings(prices90,3);
+  const cl90=classifySwings(prices90,sw90);
+  const shData=prices90.map((_,i)=>{const f=cl90.hLabels.find(h=>h.idx===i);return f?f.val:null;});
+  const slData=prices90.map((_,i)=>{const f=cl90.lLabels.find(l=>l.idx===i);return f?f.val:null;});
+  const hTrend=prices90.map(()=>null);
+  const lTrend=prices90.map(()=>null);
+  const hPts=cl90.hLabels;
+  const lPts=cl90.lLabels;
+  if(hPts.length>=2){
+    const h1=hPts[hPts.length-2],h2=hPts[hPts.length-1];
+    const slope=(h2.val-h1.val)/(h2.idx-h1.idx);
+    for(let i=h1.idx;i<prices90.length;i++)hTrend[i]=h1.val+slope*(i-h1.idx);
+  }
+  if(lPts.length>=2){
+    const l1=lPts[lPts.length-2],l2=lPts[lPts.length-1];
+    const slope=(l2.val-l1.val)/(l2.idx-l1.idx);
+    for(let i=l1.idx;i<prices90.length;i++)lTrend[i]=l1.val+slope*(i-l1.idx);
+  }
+
+  if(chart){chart.destroy();chart=null;}
+  chart=new Chart(document.getElementById('mc'),{
+    data:{
+      labels:labels90,
+      datasets:[
+        {label:sym,type:'line',data:prices90,borderColor:'#00c8ff',backgroundColor:'rgba(0,200,255,0.07)',borderWidth:2,pointRadius:0,fill:true,tension:0.2,order:5},
+        {label:'200D MA',type:'line',data:ma200_90,borderColor:'#00c8ff',backgroundColor:'transparent',borderWidth:1,borderDash:[6,3],pointRadius:0,fill:false,tension:0.2,order:4},
+        {label:'50D MA',type:'line',data:ma50_90,borderColor:'#ffd166',backgroundColor:'transparent',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false,tension:0.2,order:4},
+        {label:'High trend',type:'line',data:hTrend,borderColor:'rgba(255,77,109,0.6)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,spanGaps:false,tension:0,order:3},
+        {label:'Low trend',type:'line',data:lTrend,borderColor:'rgba(0,229,160,0.6)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,spanGaps:false,tension:0,order:3},
+        {label:'Swing High',type:'scatter',data:shData.map((y,x)=>y!==null?{x,y}:null).filter(Boolean),backgroundColor:'#ff4d6d',borderColor:'#ff4d6d',pointRadius:8,pointStyle:'triangle',rotation:0,showLine:false,order:1},
+        {label:'Swing Low',type:'scatter',data:slData.map((y,x)=>y!==null?{x,y}:null).filter(Boolean),backgroundColor:'#00e5a0',borderColor:'#00e5a0',pointRadius:8,pointStyle:'triangle',rotation:180,showLine:false,order:1}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#111827',borderColor:'#1e2d45',borderWidth:1,
+          titleFont:{family:"'IBM Plex Mono',monospace",size:11},
+          bodyFont:{family:"'IBM Plex Mono',monospace",size:11},
+          callbacks:{
+            label:ctx=>{
+              if(ctx.dataset.label==='Swing High')return' ▲ SWING HIGH: $'+ctx.parsed.y.toFixed(2);
+              if(ctx.dataset.label==='Swing Low')return' ▼ SWING LOW: $'+ctx.parsed.y.toFixed(2);
+              if(ctx.parsed.y===null)return null;
+              return' '+ctx.dataset.label+': $'+ctx.parsed.y.toFixed(2);
+            }
+          }
+        }
+      },
+      scales:{
+        x:{ticks:{autoSkip:true,maxTicksLimit:12,font:{family:"'IBM Plex Mono'",size:10},color:'#64748b'},grid:{color:'rgba(30,45,69,0.8)'}},
+        y:{ticks:{font:{family:"'IBM Plex Mono'",size:10},color:'#64748b',callback:v=>'$'+v.toFixed(0)},grid:{color:'rgba(30,45,69,0.8)'}}
+      }
+    }
+  });
+}
+
+async function runLive(){
+  const sym=currentIndex;
+  const runBtn=document.getElementById('run-btn');
+  const spinner=document.getElementById('spinner');
+  const errBar=document.getElementById('err-bar');
+  runBtn.disabled=true;spinner.classList.add('show');
+  document.getElementById('spin-lbl').textContent='LOADING '+sym+'…';
+  errBar.classList.remove('show');
+  const t0=Date.now();
+  try{
+    const url='https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'?interval=1d&range=1y&indicators=adjclose&includePrePost=false';
+    const json=await yfetch(url);
+    const result=json?.chart?.result?.[0];
+    if(!result)throw new Error('No chart data returned from Yahoo Finance');
+    const timestamps=result.timestamp;
+    const raw=result.indicators?.adjclose?.[0]?.adjclose||result.indicators?.quote?.[0]?.close;
+    if(!raw||!timestamps)throw new Error('Missing price data in response');
+    const valid=timestamps.map((t,i)=>({t,p:raw[i]})).filter(d=>d.p!=null);
+    const closes=valid.map(d=>d.p);
+    const ts=valid.map(d=>d.t);
+    const ma50arr=sma(closes,50);
+    const ma200arr=sma(closes,200);
+    const high52=Math.max(...closes);
+    const low52=Math.min(...closes);
+    const swings=findSwings(closes,3);
+    const classified=classifySwings(closes,swings);
+    const data={sym,closes,timestamps:ts,ma50:ma50arr,ma200:ma200arr,high52,low52,classified,swings};
+    cache[sym]=data;
+    const elapsed=Date.now()-t0;
+    if(elapsed<600)await new Promise(r=>setTimeout(r,600-elapsed));
+    renderAll(data);
+  }catch(err){
+    errBar.textContent='⚠ Could not fetch live data for '+sym+': '+err.message+'. Try again.';
+    errBar.classList.add('show');
+  }finally{
+    spinner.classList.remove('show');
+    runBtn.disabled=false;
+  }
+}
+
+runLive();
+</script>
+</body>
+</html>
