@@ -311,7 +311,6 @@ function renderAll(data){
 
   document.getElementById('ts').textContent='Data as of '+new Date(timestamps[timestamps.length-1]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 
-  // Build 90-day chart
   const take=Math.min(90,closes.length);
   const sl=closes.length-take;
   const labels90=timestamps.slice(sl).map(t=>{const d=new Date(t*1000);return(d.getMonth()+1)+'/'+d.getDate();});
@@ -324,18 +323,9 @@ function renderAll(data){
   const slData=prices90.map((_,i)=>{const f=cl90.lLabels.find(l=>l.idx===i);return f?f.val:null;});
   const hTrend=prices90.map(()=>null);
   const lTrend=prices90.map(()=>null);
-  const hPts=cl90.hLabels;
-  const lPts=cl90.lLabels;
-  if(hPts.length>=2){
-    const h1=hPts[hPts.length-2],h2=hPts[hPts.length-1];
-    const slope=(h2.val-h1.val)/(h2.idx-h1.idx);
-    for(let i=h1.idx;i<prices90.length;i++)hTrend[i]=h1.val+slope*(i-h1.idx);
-  }
-  if(lPts.length>=2){
-    const l1=lPts[lPts.length-2],l2=lPts[lPts.length-1];
-    const slope=(l2.val-l1.val)/(l2.idx-l1.idx);
-    for(let i=l1.idx;i<prices90.length;i++)lTrend[i]=l1.val+slope*(i-l1.idx);
-  }
+  const hPts=cl90.hLabels,lPts=cl90.lLabels;
+  if(hPts.length>=2){const h1=hPts[hPts.length-2],h2=hPts[hPts.length-1];const slope=(h2.val-h1.val)/(h2.idx-h1.idx);for(let i=h1.idx;i<prices90.length;i++)hTrend[i]=h1.val+slope*(i-h1.idx);}
+  if(lPts.length>=2){const l1=lPts[lPts.length-2],l2=lPts[lPts.length-1];const slope=(l2.val-l1.val)/(l2.idx-l1.idx);for(let i=l1.idx;i<prices90.length;i++)lTrend[i]=l1.val+slope*(i-l1.idx);}
 
   if(chart){chart.destroy();chart=null;}
   const isLight=document.body.classList.contains('light');
@@ -343,42 +333,18 @@ function renderAll(data){
   const ttBg=isLight?'#ffffff':'#111827';
   const ttBorder=isLight?'#cbd5e1':'#1e2d45';
   chart=new Chart(document.getElementById('mc'),{
-    data:{
-      labels:labels90,
-      datasets:[
-        {label:sym,type:'line',data:prices90,borderColor:'#00c8ff',backgroundColor:'rgba(0,200,255,0.07)',borderWidth:2,pointRadius:0,fill:true,tension:0.2,order:5},
-        {label:'200D MA',type:'line',data:ma200_90,borderColor:'#00c8ff',backgroundColor:'transparent',borderWidth:1,borderDash:[6,3],pointRadius:0,fill:false,tension:0.2,order:4},
-        {label:'50D MA',type:'line',data:ma50_90,borderColor:'#ffd166',backgroundColor:'transparent',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false,tension:0.2,order:4},
-        {label:'High trend',type:'line',data:hTrend,borderColor:'rgba(255,77,109,0.6)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,spanGaps:false,tension:0,order:3},
-        {label:'Low trend',type:'line',data:lTrend,borderColor:'rgba(0,229,160,0.6)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,spanGaps:false,tension:0,order:3},
-        {label:'Swing High',type:'scatter',data:shData.map((y,x)=>y!==null?{x,y}:null).filter(Boolean),backgroundColor:'#ff4d6d',borderColor:'#ff4d6d',pointRadius:8,pointStyle:'triangle',rotation:0,showLine:false,order:1},
-        {label:'Swing Low',type:'scatter',data:slData.map((y,x)=>y!==null?{x,y}:null).filter(Boolean),backgroundColor:'#00e5a0',borderColor:'#00e5a0',pointRadius:8,pointStyle:'triangle',rotation:180,showLine:false,order:1}
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:ttBg,borderColor:ttBorder,borderWidth:1,
-          titleFont:{family:"'IBM Plex Mono',monospace",size:11},
-          bodyFont:{family:"'IBM Plex Mono',monospace",size:11},
-          callbacks:{
-            label:ctx=>{
-              if(ctx.dataset.label==='Swing High')return' ▲ SWING HIGH: $'+ctx.parsed.y.toFixed(2);
-              if(ctx.dataset.label==='Swing Low')return' ▼ SWING LOW: $'+ctx.parsed.y.toFixed(2);
-              if(ctx.parsed.y===null)return null;
-              return' '+ctx.dataset.label+': $'+ctx.parsed.y.toFixed(2);
-            }
-          }
-        }
-      },
-      scales:{
-        x:{ticks:{autoSkip:true,maxTicksLimit:12,font:{family:"'IBM Plex Mono'",size:10},color:'#64748b'},grid:{color:gridCol}},
-        y:{ticks:{font:{family:"'IBM Plex Mono'",size:10},color:'#64748b',callback:v=>'$'+v.toFixed(0)},grid:{color:gridCol}}
-      }
-    }
+    data:{labels:labels90,datasets:[
+      {label:sym,type:'line',data:prices90,borderColor:'#00c8ff',backgroundColor:'rgba(0,200,255,0.07)',borderWidth:2,pointRadius:0,fill:true,tension:0.2,order:5},
+      {label:'200D MA',type:'line',data:ma200_90,borderColor:'#00c8ff',backgroundColor:'transparent',borderWidth:1,borderDash:[6,3],pointRadius:0,fill:false,tension:0.2,order:4},
+      {label:'50D MA',type:'line',data:ma50_90,borderColor:'#ffd166',backgroundColor:'transparent',borderWidth:1,borderDash:[4,3],pointRadius:0,fill:false,tension:0.2,order:4},
+      {label:'High trend',type:'line',data:hTrend,borderColor:'rgba(255,77,109,0.6)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,spanGaps:false,tension:0,order:3},
+      {label:'Low trend',type:'line',data:lTrend,borderColor:'rgba(0,229,160,0.6)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,4],pointRadius:0,fill:false,spanGaps:false,tension:0,order:3},
+      {label:'Swing High',type:'scatter',data:shData.map((y,x)=>y!==null?{x,y}:null).filter(Boolean),backgroundColor:'#ff4d6d',borderColor:'#ff4d6d',pointRadius:8,pointStyle:'triangle',rotation:0,showLine:false,order:1},
+      {label:'Swing Low',type:'scatter',data:slData.map((y,x)=>y!==null?{x,y}:null).filter(Boolean),backgroundColor:'#00e5a0',borderColor:'#00e5a0',pointRadius:8,pointStyle:'triangle',rotation:180,showLine:false,order:1}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:ttBg,borderColor:ttBorder,borderWidth:1,titleFont:{family:"'IBM Plex Mono',monospace",size:11},bodyFont:{family:"'IBM Plex Mono',monospace",size:11},callbacks:{label:ctx=>{if(ctx.dataset.label==='Swing High')return' ▲ SWING HIGH: $'+ctx.parsed.y.toFixed(2);if(ctx.dataset.label==='Swing Low')return' ▼ SWING LOW: $'+ctx.parsed.y.toFixed(2);if(ctx.parsed.y===null)return null;return' '+ctx.dataset.label+': $'+ctx.parsed.y.toFixed(2);}}}},
+      scales:{x:{ticks:{autoSkip:true,maxTicksLimit:12,font:{family:"'IBM Plex Mono'",size:10},color:'#64748b'},grid:{color:gridCol}},y:{ticks:{font:{family:"'IBM Plex Mono'",size:10},color:'#64748b',callback:v=>'$'+v.toFixed(0)},grid:{color:gridCol}}}}
   });
 }
 
@@ -428,11 +394,10 @@ function toggleTheme(){
   localStorage.setItem('dca-theme',isLight?'light':'dark');
   if(chart){
     const gridCol=isLight?'rgba(203,213,225,0.6)':'rgba(30,45,69,0.8)';
-    const tickCol='#64748b';
     const ttBg=isLight?'#ffffff':'#111827';
     const ttBorder=isLight?'#cbd5e1':'#1e2d45';
-    chart.options.scales.x.ticks.color=tickCol;
-    chart.options.scales.y.ticks.color=tickCol;
+    chart.options.scales.x.ticks.color='#64748b';
+    chart.options.scales.y.ticks.color='#64748b';
     chart.options.scales.x.grid.color=gridCol;
     chart.options.scales.y.grid.color=gridCol;
     chart.options.plugins.tooltip.backgroundColor=ttBg;
