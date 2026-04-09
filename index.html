@@ -7,10 +7,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
-:root{--bg:#0a0e1a;--panel:#111827;--panel2:#0f172a;--border:#1e2d45;--accent:#00c8ff;--green:#00e5a0;--red:#ff4d6d;--yellow:#ffd166;--muted:#64748b;--text:#e2e8f0;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;}
+:root{--bg:#0a0e1a;--panel:#111827;--panel2:#0f172a;--border:#1e2d45;--accent:#00c8ff;--green:#00e5a0;--red:#ff4d6d;--yellow:#ffd166;--muted:#64748b;--text:#e2e8f0;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--grid-line:rgba(0,200,255,0.03);}
+body.light{--bg:#f0f4f8;--panel:#ffffff;--panel2:#e8edf3;--border:#cbd5e1;--accent:#0284c7;--green:#059669;--red:#e11d48;--yellow:#d97706;--muted:#64748b;--text:#0f172a;--grid-line:rgba(2,132,199,0.05);}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;overflow-x:hidden;}
-.grid-bg{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(0,200,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,0.03) 1px,transparent 1px);background-size:40px 40px;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;overflow-x:hidden;transition:background 0.25s,color 0.25s;}
+.grid-bg{position:fixed;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);background-size:40px 40px;}
+.theme-toggle{display:flex;align-items:center;gap:7px;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:0.08em;color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:5px 10px;background:transparent;transition:all 0.15s;user-select:none;}
+.theme-toggle:hover{color:var(--accent);border-color:var(--accent);}
+.toggle-track{width:28px;height:15px;border-radius:8px;background:var(--border);position:relative;transition:background 0.2s;flex-shrink:0;}
+.toggle-thumb{width:11px;height:11px;border-radius:50%;background:var(--muted);position:absolute;top:2px;left:2px;transition:transform 0.2s,background 0.2s;}
+body.light .toggle-track{background:var(--accent);}
+body.light .toggle-thumb{transform:translateX(13px);background:#fff;}
 .wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:20px 16px;}
 header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px;}
 header h1{font-family:var(--mono);font-size:20px;color:var(--accent);letter-spacing:0.06em;}
@@ -81,6 +88,10 @@ footer{font-size:10px;color:var(--muted);text-align:center;padding-top:12px;bord
     <div id="ts">—</div>
     <div class="hdr-btns">
       <div class="spinner" id="spinner"><div class="spin-ring"></div><span id="spin-lbl">LOADING…</span></div>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
+        <span id="theme-label">DARK</span>
+        <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      </button>
       <button class="btn" id="run-btn" onclick="runLive()">REFRESH LIVE ↗</button>
     </div>
   </div>
@@ -327,6 +338,10 @@ function renderAll(data){
   }
 
   if(chart){chart.destroy();chart=null;}
+  const isLight=document.body.classList.contains('light');
+  const gridCol=isLight?'rgba(203,213,225,0.6)':'rgba(30,45,69,0.8)';
+  const ttBg=isLight?'#ffffff':'#111827';
+  const ttBorder=isLight?'#cbd5e1':'#1e2d45';
   chart=new Chart(document.getElementById('mc'),{
     data:{
       labels:labels90,
@@ -346,7 +361,7 @@ function renderAll(data){
       plugins:{
         legend:{display:false},
         tooltip:{
-          backgroundColor:'#111827',borderColor:'#1e2d45',borderWidth:1,
+          backgroundColor:ttBg,borderColor:ttBorder,borderWidth:1,
           titleFont:{family:"'IBM Plex Mono',monospace",size:11},
           bodyFont:{family:"'IBM Plex Mono',monospace",size:11},
           callbacks:{
@@ -360,8 +375,8 @@ function renderAll(data){
         }
       },
       scales:{
-        x:{ticks:{autoSkip:true,maxTicksLimit:12,font:{family:"'IBM Plex Mono'",size:10},color:'#64748b'},grid:{color:'rgba(30,45,69,0.8)'}},
-        y:{ticks:{font:{family:"'IBM Plex Mono'",size:10},color:'#64748b',callback:v=>'$'+v.toFixed(0)},grid:{color:'rgba(30,45,69,0.8)'}}
+        x:{ticks:{autoSkip:true,maxTicksLimit:12,font:{family:"'IBM Plex Mono'",size:10},color:'#64748b'},grid:{color:gridCol}},
+        y:{ticks:{font:{family:"'IBM Plex Mono'",size:10},color:'#64748b',callback:v=>'$'+v.toFixed(0)},grid:{color:gridCol}}
       }
     }
   });
@@ -407,6 +422,28 @@ async function runLive(){
   }
 }
 
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  document.getElementById('theme-label').textContent=isLight?'LIGHT':'DARK';
+  localStorage.setItem('dca-theme',isLight?'light':'dark');
+  if(chart){
+    const gridCol=isLight?'rgba(203,213,225,0.6)':'rgba(30,45,69,0.8)';
+    const tickCol='#64748b';
+    const ttBg=isLight?'#ffffff':'#111827';
+    const ttBorder=isLight?'#cbd5e1':'#1e2d45';
+    chart.options.scales.x.ticks.color=tickCol;
+    chart.options.scales.y.ticks.color=tickCol;
+    chart.options.scales.x.grid.color=gridCol;
+    chart.options.scales.y.grid.color=gridCol;
+    chart.options.plugins.tooltip.backgroundColor=ttBg;
+    chart.options.plugins.tooltip.borderColor=ttBorder;
+    chart.update();
+  }
+}
+(function(){
+  const saved=localStorage.getItem('dca-theme');
+  if(saved==='light'){document.body.classList.add('light');document.getElementById('theme-label').textContent='LIGHT';}
+})();
 runLive();
 </script>
 </body>
